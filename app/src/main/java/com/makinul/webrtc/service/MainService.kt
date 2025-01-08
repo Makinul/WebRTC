@@ -41,6 +41,7 @@ class MainService : Service(), MainRepository.Listener {
         var endCallListener: EndCallListener? = null
         var localSurfaceView: SurfaceViewRenderer? = null
         var remoteSurfaceView: SurfaceViewRenderer? = null
+        var screenPermissionIntent: Intent? = null
     }
 
     override fun onCreate() {
@@ -61,10 +62,8 @@ class MainService : Service(), MainRepository.Listener {
                 MainServiceActions.SWITCH_CAMERA.name -> handleSwitchCamera()
                 MainServiceActions.TOGGLE_AUDIO.name -> handleToggleAudio(incomingIntent)
                 MainServiceActions.TOGGLE_VIDEO.name -> handleToggleVideo(incomingIntent)
-                MainServiceActions.TOGGLE_AUDIO_DEVICE.name -> handleToggleAudioDevice(
-                    incomingIntent
-                )
-
+                MainServiceActions.TOGGLE_AUDIO_DEVICE.name -> handleToggleAudioDevice(incomingIntent)
+                MainServiceActions.TOGGLE_SCREEN_SHARE.name -> handleToggleScreenShare(incomingIntent)
                 MainServiceActions.STOP_SERVICE.name -> handleStopService()
                 else -> Unit
             }
@@ -81,6 +80,26 @@ class MainService : Service(), MainRepository.Listener {
         }
     }
 
+    private fun handleToggleScreenShare(incomingIntent: Intent) {
+        val isStarting = incomingIntent.getBooleanExtra("isStarting", true)
+        if (isStarting) {
+            // we should start screen share
+            //but we have to keep it in mind that we first should remove the camera streaming first
+            if (isPreviousCallStateVideo) {
+                mainRepository.toggleVideo(true)
+            }
+            mainRepository.setScreenCaptureIntent(screenPermissionIntent!!)
+            mainRepository.toggleScreenShare(true)
+
+        } else {
+            //we should stop screen share and check if camera streaming was on so we should make it on back again
+            mainRepository.toggleScreenShare(false)
+            if (isPreviousCallStateVideo) {
+                mainRepository.toggleVideo(false)
+            }
+        }
+    }
+
     private fun handleToggleAudioDevice(incomingIntent: Intent) {
         val type = when (incomingIntent.getStringExtra("type")) {
             RTCAudioManager.AudioDevice.EARPIECE.name -> RTCAudioManager.AudioDevice.EARPIECE
@@ -93,6 +112,8 @@ class MainService : Service(), MainRepository.Listener {
             rtcAudioManager.selectAudioDevice(it)
             Log.d(TAG, "handleToggleAudioDevice: $it")
         }
+
+
     }
 
     private fun handleToggleVideo(incomingIntent: Intent) {
@@ -134,10 +155,12 @@ class MainService : Service(), MainRepository.Listener {
         mainRepository.initLocalSurfaceView(localSurfaceView!!, isVideoCall)
         mainRepository.initRemoteSurfaceView(remoteSurfaceView!!)
 
+
         if (!isCaller) {
             //start the video call
             mainRepository.startCall()
         }
+
     }
 
     private fun handleStartService(incomingIntent: Intent) {
@@ -151,6 +174,7 @@ class MainService : Service(), MainRepository.Listener {
             mainRepository.listener = this
             mainRepository.initFirebase()
             mainRepository.initWebrtcClient(username!!)
+
         }
     }
 
@@ -163,31 +187,19 @@ class MainService : Service(), MainRepository.Listener {
             val intent = Intent(this, MainServiceReceiver::class.java).apply {
                 action = "ACTION_EXIT"
             }
-            val pendingIntent: PendingIntent = PendingIntent.getBroadcast(
-                this,
-                0,
-                intent,
-                PendingIntent.FLAG_IMMUTABLE
-            )
-            notificationManager.createNotificationChannel(notificationChannel)
+            val pendingIntent: PendingIntent =
+                PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 
-            val notification = NotificationCompat.Builder(this, "channel1")
-                .setSmallIcon(R.mipmap.ic_launcher)
+            notificationManager.createNotificationChannel(notificationChannel)
+            val notification = NotificationCompat.Builder(
+                this, "channel1"
+            ).setSmallIcon(R.mipmap.ic_launcher)
                 .addAction(R.drawable.ic_end_call, "Exit", pendingIntent)
 
-//            startService(this)
-//            startForegroundService(this)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(
-                    1,
-                    notification.build(),
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
-                )
-            } else {
-                startForeground(1, notification.build())
-            }
+            startForeground(1, notification.build())
         }
     }
+
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -200,11 +212,9 @@ class MainService : Service(), MainRepository.Listener {
                 DataModelType.StartAudioCall -> {
                     listener?.onCallReceived(data)
                 }
-
                 DataModelType.EndCall -> {
                     listener?.onCallEnded(data)
                 }
-
                 else -> Unit
             }
         }

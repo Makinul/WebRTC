@@ -4,12 +4,12 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import androidx.core.view.isVisible
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
-import com.codewithkael.firebasevideocall.service.MainServiceRepository
-import com.google.android.material.snackbar.Snackbar
+import com.makinul.webrtc.service.MainServiceRepository
 import com.makinul.webrtc.R
 import com.makinul.webrtc.base.BaseActivity
 import com.makinul.webrtc.data.repository.MainRepository
@@ -17,6 +17,8 @@ import com.makinul.webrtc.databinding.ActivityMainBinding
 import com.makinul.webrtc.service.MainService
 import com.makinul.webrtc.ui.CallActivity
 import com.makinul.webrtc.utils.DataModel
+import com.makinul.webrtc.utils.DataModelType
+import com.makinul.webrtc.utils.getCameraAndMicPermission
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -97,27 +99,27 @@ class MainActivity : BaseActivity(), MainService.Listener {
 
     override fun onCallReceived(model: DataModel) {
         runOnUiThread {
-//            views.apply {
-//                val isVideoCall = model.type == DataModelType.StartVideoCall
-//                val isVideoCallText = if (isVideoCall) "Video" else "Audio"
-//                incomingCallTitleTv.text = "${model.sender} is $isVideoCallText Calling you"
-//                incomingCallLayout.isVisible = true
-//                acceptButton.setOnClickListener {
-//                    getCameraAndMicPermission {
-//                        incomingCallLayout.isVisible = false
-//                        // create an intent to go to video call activity
-//                        startActivity(Intent(this@MainActivity, CallActivity::class.java).apply {
-//                            putExtra("target", model.sender)
-//                            putExtra("isVideoCall", isVideoCall)
-//                            putExtra("isCaller", false)
-//                        })
-//                    }
-//                }
-//
-//                declineButton.setOnClickListener {
-//                    incomingCallLayout.isVisible = false
-//                }
-//            }
+            binding.apply {
+                val isVideoCall = model.type == DataModelType.StartVideoCall
+                val isVideoCallText = if (isVideoCall) "Video" else "Audio"
+                incomingCallTitleTv.text = "${model.sender} is $isVideoCallText Calling you"
+                incomingCallLayout.isVisible = true
+                acceptButton.setOnClickListener {
+                    getCameraAndMicPermission {
+                        incomingCallLayout.isVisible = false
+                        // create an intent to go to video call activity
+                        startActivity(Intent(this@MainActivity, CallActivity::class.java).apply {
+                            putExtra("target", model.sender)
+                            putExtra("isVideoCall", isVideoCall)
+                            putExtra("isCaller", false)
+                        })
+                    }
+                }
+
+                declineButton.setOnClickListener {
+                    incomingCallLayout.isVisible = false
+                }
+            }
             showToast("Call Received ${model.sender}")
         }
     }

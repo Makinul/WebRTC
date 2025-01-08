@@ -48,6 +48,7 @@ class MainRepository @Inject constructor(
                         )
                         webRTCClient.initiateCall(target!!)
                     }
+
                     DataModelType.Answer -> {
                         val data = event.data.toString()
                         if (!answerDataSet) {
@@ -61,6 +62,7 @@ class MainRepository @Inject constructor(
                             )
                         }
                     }
+
                     DataModelType.IceCandidates -> {
                         val candidate: IceCandidate? = try {
                             gson.fromJson(event.data.toString(), IceCandidate::class.java)
@@ -71,9 +73,11 @@ class MainRepository @Inject constructor(
                             webRTCClient.addIceCandidateToPeer(it)
                         }
                     }
+
                     DataModelType.EndCall -> {
                         listener?.endCall()
                     }
+
                     else -> Unit
                 }
             }
@@ -180,6 +184,14 @@ class MainRepository @Inject constructor(
 
     fun setScreenCaptureIntent(screenPermissionIntent: Intent) {
         webRTCClient.setPermissionIntent(screenPermissionIntent)
+    }
+
+    fun toggleScreenShare(isStarting: Boolean) {
+        if (isStarting) {
+            webRTCClient.startScreenCapturing()
+        } else {
+            webRTCClient.stopScreenCapturing()
+        }
     }
 
     fun logOff(function: () -> Unit) = firebaseClient.logOff(function)

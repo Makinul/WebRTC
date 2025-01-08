@@ -1,10 +1,8 @@
-package com.codewithkael.firebasevideocall.service
+package com.makinul.webrtc.service
 
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import com.makinul.webrtc.service.MainService
-import com.makinul.webrtc.service.MainServiceActions
 import javax.inject.Inject
 
 class MainServiceRepository @Inject constructor(
@@ -69,6 +67,13 @@ class MainServiceRepository @Inject constructor(
         val intent = Intent(context, MainService::class.java)
         intent.action = MainServiceActions.TOGGLE_AUDIO_DEVICE.name
         intent.putExtra("type", type)
+        startServiceIntent(intent)
+    }
+
+    fun toggleScreenShare(isStarting: Boolean) {
+        val intent = Intent(context, MainService::class.java)
+        intent.action = MainServiceActions.TOGGLE_SCREEN_SHARE.name
+        intent.putExtra("isStarting", isStarting)
         startServiceIntent(intent)
     }
 

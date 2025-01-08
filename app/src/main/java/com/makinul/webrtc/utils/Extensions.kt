@@ -13,6 +13,7 @@ fun AppCompatActivity.getCameraAndMicPermission(success: () -> Unit) {
 //                Toast.makeText(this, "camera and mic permission is required", Toast.LENGTH_SHORT).show()
 //            }
 //        }
+    success()
 }
 
 fun Int.convertToHumanTime(): String {
