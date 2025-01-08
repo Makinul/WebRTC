@@ -10,7 +10,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.makinul.webrtc"
+        applicationId = "com.codewithkael.firebasevideocall"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
@@ -63,6 +63,14 @@ dependencies {
     // for dependency injection
     implementation(libs.dagger.hilt.android)
     kapt(libs.dagger.hilt.android.compiler)
+
+    // Import the BoM for the Firebase platform
+    implementation(platform(libs.google.firebase.bom))
+    // When using the BoM, you don't specify versions in Firebase library dependencies
+    implementation(libs.firebase.realtime.database)
+
+    // for video calling
+    implementation(libs.mesibo.webrtc)
 }
 
 // Allow references to generated code
