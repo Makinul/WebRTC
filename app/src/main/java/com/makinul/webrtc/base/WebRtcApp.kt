@@ -17,7 +17,7 @@ class WebRtcApp : Application() {
     }
 
     companion object {
-        private const val TAG = "FitnessProApp"
+        private const val TAG = "WebRtcApp"
 
         var instance: WebRtcApp? = null
             private set

@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.dagger.hilt.android)
     id("kotlin-kapt")
+    alias(libs.plugins.google.play.services)
 }
 
 android {
@@ -68,6 +69,8 @@ dependencies {
     implementation(platform(libs.google.firebase.bom))
     // When using the BoM, you don't specify versions in Firebase library dependencies
     implementation(libs.firebase.realtime.database)
+
+    implementation(libs.google.gson)
 
     // for video calling
     implementation(libs.mesibo.webrtc)
