@@ -120,13 +120,14 @@ class MainActivity : BaseActivity(), MainService.Listener {
                     incomingCallLayout.isVisible = false
                 }
             }
-            showToast("Call Received ${model.sender}")
         }
     }
 
     override fun onCallEnded(model: DataModel) {
         runOnUiThread {
-            showToast("Call Ended ${model.sender}")
+            binding.apply {
+                incomingCallLayout.isVisible = false
+            }
         }
     }
 
