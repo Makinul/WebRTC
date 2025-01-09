@@ -1,37 +1,26 @@
 {
   "project_info": {
-    "project_number": "12957448847",
-    "firebase_url": "https://fir-videocall-d1cf8-default-rtdb.europe-west1.firebasedatabase.app",
-    "project_id": "fir-videocall-d1cf8",
-    "storage_bucket": "fir-videocall-d1cf8.appspot.com"
+    "project_number": "23458558937",
+    "project_id": "portfolio-67c41",
+    "storage_bucket": "portfolio-67c41.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:12957448847:android:abea1125f53b8d133b0efa",
+        "mobilesdk_app_id": "1:23458558937:android:4a60774ba47c71d0e65fc8",
         "android_client_info": {
-          "package_name": "com.codewithkael.firebasevideocall"
+          "package_name": "com.makinul.webrtc"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "12957448847-ao0slpr11b5pcbb589q9jsujt13otk2r.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCcxKqsrfEZfUJuPu6yMpLiHgYmpm68xHE"
+          "current_key": "AIzaSyCXXAT4Yv3CdIO7U1bjxW-Si5LfpTz9aR8"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "12957448847-ao0slpr11b5pcbb589q9jsujt13otk2r.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

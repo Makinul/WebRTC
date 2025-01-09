@@ -315,7 +315,6 @@ class WebRTCClient @Inject constructor(
         localSurfaceView.clearImage()
         localStream?.removeTrack(localScreenShareVideoTrack)
         localScreenShareVideoTrack?.dispose()
-
     }
 
     private fun createScreenCapturer(): VideoCapturer {
@@ -326,7 +325,6 @@ class WebRTCClient @Inject constructor(
             }
         })
     }
-
 
     interface Listener {
         fun onTransferEventToSocket(data: DataModel)

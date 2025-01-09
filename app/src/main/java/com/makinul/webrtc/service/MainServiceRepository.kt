@@ -82,5 +82,4 @@ class MainServiceRepository @Inject constructor(
         intent.action = MainServiceActions.STOP_SERVICE.name
         startServiceIntent(intent)
     }
-
 }

@@ -100,7 +100,10 @@ class FirebaseClient @Inject constructor(
     fun sendMessageToOtherClient(message: DataModel, success: (Boolean) -> Unit) {
         val convertedMessage = gson.toJson(message.copy(sender = currentUsername))
         showLog("sendMessageToOtherClient type ${message.type}")
-        dbRef.child(message.target).child(LATEST_EVENT).setValue(convertedMessage)
+
+        dbRef.child(message.target)
+            .child(LATEST_EVENT)
+            .setValue(convertedMessage)
             .addOnCompleteListener {
                 success(true)
             }.addOnFailureListener {
@@ -121,7 +124,6 @@ class FirebaseClient @Inject constructor(
         dbRef.child(currentUsername!!).child(STATUS).setValue(UserStatus.OFFLINE)
             .addOnCompleteListener { function() }
     }
-
 
     interface Listener {
         fun onLatestEventReceived(event: DataModel)

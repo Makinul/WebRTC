@@ -20,7 +20,6 @@ class MainRepository @Inject constructor(
     private val gson: Gson
 ) : WebRTCClient.Listener {
 
-    private var target: String? = null
     var listener: Listener? = null
     private var remoteView: SurfaceViewRenderer? = null
 
@@ -32,18 +31,18 @@ class MainRepository @Inject constructor(
         firebaseClient.observeUsersStatus(status)
     }
 
-    private var answerDataSet = false
-
     fun initFirebase() {
         firebaseClient.subscribeForLatestEvent(object : FirebaseClient.Listener {
             override fun onLatestEventReceived(event: DataModel) {
                 listener?.onLatestEventReceived(event)
                 when (event.type) {
                     DataModelType.Offer -> {
+                        val data = event.data.toString()
+                        showLog("Offer data")
                         webRTCClient.onRemoteSessionReceived(
                             SessionDescription(
                                 SessionDescription.Type.OFFER,
-                                event.data.toString()
+                                data
                             )
                         )
                         webRTCClient.initiateCall(target!!)
@@ -51,16 +50,13 @@ class MainRepository @Inject constructor(
 
                     DataModelType.Answer -> {
                         val data = event.data.toString()
-                        if (!answerDataSet) {
-                            showLog("Answer data $data")
-                            answerDataSet = true
-                            webRTCClient.onRemoteSessionReceived(
-                                SessionDescription(
-                                    SessionDescription.Type.ANSWER,
-                                    data
-                                )
+                        showLog("Answer data")
+                        webRTCClient.onRemoteSessionReceived(
+                            SessionDescription(
+                                SessionDescription.Type.ANSWER,
+                                data
                             )
-                        }
+                        )
                     }
 
                     DataModelType.IceCandidates -> {
@@ -93,8 +89,16 @@ class MainRepository @Inject constructor(
         )
     }
 
-    fun setTarget(target: String) {
+    private var target: String? = null
+
+    fun setTarget(target: String?) {
         this.target = target
+    }
+
+    private var sender: String? = null
+
+    fun setSender(sender: String?) {
+        this.sender = sender
     }
 
     interface Listener {

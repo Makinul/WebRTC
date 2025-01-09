@@ -9,27 +9,25 @@ import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
-import com.makinul.webrtc.service.MainServiceRepository
 import com.makinul.webrtc.R
 import com.makinul.webrtc.base.BaseActivity
 import com.makinul.webrtc.data.repository.MainRepository
 import com.makinul.webrtc.databinding.ActivityMainBinding
-import com.makinul.webrtc.service.MainService
 import com.makinul.webrtc.ui.CallActivity
+import com.makinul.webrtc.ui.login.LoginActivity.Companion.DEVICE_USER
+import com.makinul.webrtc.ui.login.LoginActivity.Companion.EMULATOR_USER
 import com.makinul.webrtc.utils.DataModel
 import com.makinul.webrtc.utils.DataModelType
 import com.makinul.webrtc.utils.getCameraAndMicPermission
+import com.makinul.webrtc.utils.isValid
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : BaseActivity(), MainService.Listener {
+class MainActivity : BaseActivity(), MainRepository.Listener {
 
     @Inject
     lateinit var mainRepository: MainRepository
-
-    @Inject
-    lateinit var mainServiceRepository: MainServiceRepository
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
@@ -50,11 +48,22 @@ class MainActivity : BaseActivity(), MainService.Listener {
 //            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
 //                .setAction("Action", null)
 //                .setAnchorView(R.id.fab).show()
-            startActivity(Intent(this@MainActivity, CallActivity::class.java).apply {
-                putExtra("target", "-2222222")
-                putExtra("isVideoCall", true)
-                putExtra("isCaller", true)
-            })
+            val target = DEVICE_USER
+            val sender = EMULATOR_USER
+            mainRepository.setSender(sender)
+            mainRepository.setTarget(target)
+            mainRepository.sendConnectionRequest(target, true) {
+                if (it) {
+                    //we have to start video call
+                    //we wanna create an intent to move to call activity
+                    startActivity(Intent(this, CallActivity::class.java).apply {
+                        putExtra("username", sender)
+                        putExtra("target", target)
+                        putExtra("isVideoCall", true)
+                        putExtra("isCaller", true)
+                    })
+                }
+            }
         }
         init()
     }
@@ -65,15 +74,28 @@ class MainActivity : BaseActivity(), MainService.Listener {
         username = intent.getStringExtra("username")
         if (username == null) finish()
 
-        MainService.listener = this
+        binding.toolbar.title = username
 
-        //2. start foreground service to listen negotiations and calls.
-        startMyService()
+        //1. observe other users status
+        subscribeObservers()
+
+//        //2. start foreground service to listen negotiations and calls.
+//        startMyService()
+
+        //setup my clients
+        mainRepository.listener = this
+        mainRepository.initFirebase()
     }
 
-    private fun startMyService() {
-        mainServiceRepository.startService(username!!)
+    private fun subscribeObservers() {
+//        mainRepository.observeUsersStatus {
+//            showLog("subscribeObservers $it")
+//        }
     }
+
+//    private fun startMyService() {
+//        mainServiceRepository.startService(username!!)
+//    }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -97,7 +119,7 @@ class MainActivity : BaseActivity(), MainService.Listener {
                 || super.onSupportNavigateUp()
     }
 
-    override fun onCallReceived(model: DataModel) {
+    private fun onCallReceived(model: DataModel) {
         runOnUiThread {
             binding.apply {
                 val isVideoCall = model.type == DataModelType.StartVideoCall
@@ -108,7 +130,14 @@ class MainActivity : BaseActivity(), MainService.Listener {
                     getCameraAndMicPermission {
                         incomingCallLayout.isVisible = false
                         // create an intent to go to video call activity
+
+                        val target = model.sender
+                        val sender = model.target
+                        mainRepository.setSender(sender)
+                        mainRepository.setTarget(target)
+
                         startActivity(Intent(this@MainActivity, CallActivity::class.java).apply {
+                            putExtra("username", model.target)
                             putExtra("target", model.sender)
                             putExtra("isVideoCall", isVideoCall)
                             putExtra("isCaller", false)
@@ -118,12 +147,20 @@ class MainActivity : BaseActivity(), MainService.Listener {
 
                 declineButton.setOnClickListener {
                     incomingCallLayout.isVisible = false
+
+                    val target = EMULATOR_USER
+                    val sender = DEVICE_USER
+                    mainRepository.setSender(sender)
+                    mainRepository.setTarget(target)
+
+                    mainRepository.endCall()
+                    mainRepository.sendEndCall()
                 }
             }
         }
     }
 
-    override fun onCallEnded(model: DataModel) {
+    private fun onCallEnded(model: DataModel) {
         runOnUiThread {
             binding.apply {
                 incomingCallLayout.isVisible = false
@@ -131,12 +168,33 @@ class MainActivity : BaseActivity(), MainService.Listener {
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        mainServiceRepository.stopService()
-    }
+//    override fun onDestroy() {
+//        super.onDestroy()
+//        mainServiceRepository.stopService()
+//    }
 
     companion object {
         private val TAG = "FirebaseWebRTC MainActivity"
+    }
+
+    override fun onLatestEventReceived(data: DataModel) {
+        showLog("data.type ${data.type}")
+        when (data.type) {
+            DataModelType.StartVideoCall,
+            DataModelType.StartAudioCall -> {
+                onCallReceived(data)
+            }
+
+            DataModelType.EndCall -> {
+                onCallEnded(data)
+            }
+
+            else -> Unit
+        }
+    }
+
+    override fun endCall() {
+        showLog("endCall")
+        mainRepository.endCall()
     }
 }

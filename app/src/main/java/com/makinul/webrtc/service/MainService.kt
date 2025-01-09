@@ -1,5 +1,7 @@
 package com.makinul.webrtc.service
 
+import android.Manifest
+import android.app.ForegroundServiceStartNotAllowedException
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -10,6 +12,8 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
+import androidx.core.content.PermissionChecker
 import com.makinul.webrtc.R
 import com.makinul.webrtc.data.repository.MainRepository
 import com.makinul.webrtc.utils.DataModel
@@ -62,8 +66,14 @@ class MainService : Service(), MainRepository.Listener {
                 MainServiceActions.SWITCH_CAMERA.name -> handleSwitchCamera()
                 MainServiceActions.TOGGLE_AUDIO.name -> handleToggleAudio(incomingIntent)
                 MainServiceActions.TOGGLE_VIDEO.name -> handleToggleVideo(incomingIntent)
-                MainServiceActions.TOGGLE_AUDIO_DEVICE.name -> handleToggleAudioDevice(incomingIntent)
-                MainServiceActions.TOGGLE_SCREEN_SHARE.name -> handleToggleScreenShare(incomingIntent)
+                MainServiceActions.TOGGLE_AUDIO_DEVICE.name -> handleToggleAudioDevice(
+                    incomingIntent
+                )
+
+                MainServiceActions.TOGGLE_SCREEN_SHARE.name -> handleToggleScreenShare(
+                    incomingIntent
+                )
+
                 MainServiceActions.STOP_SERVICE.name -> handleStopService()
                 else -> Unit
             }
@@ -112,8 +122,6 @@ class MainService : Service(), MainRepository.Listener {
             rtcAudioManager.selectAudioDevice(it)
             Log.d(TAG, "handleToggleAudioDevice: $it")
         }
-
-
     }
 
     private fun handleToggleVideo(incomingIntent: Intent) {
@@ -155,12 +163,10 @@ class MainService : Service(), MainRepository.Listener {
         mainRepository.initLocalSurfaceView(localSurfaceView!!, isVideoCall)
         mainRepository.initRemoteSurfaceView(remoteSurfaceView!!)
 
-
         if (!isCaller) {
             //start the video call
             mainRepository.startCall()
         }
-
     }
 
     private fun handleStartService(incomingIntent: Intent) {
@@ -174,32 +180,66 @@ class MainService : Service(), MainRepository.Listener {
             mainRepository.listener = this
             mainRepository.initFirebase()
             mainRepository.initWebrtcClient(username!!)
-
         }
     }
 
     private fun startServiceWithNotification() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationChannel = NotificationChannel(
-                "channel1", "foreground", NotificationManager.IMPORTANCE_HIGH
+//            val notificationChannel = NotificationChannel(
+//                "channel1", "foreground", NotificationManager.IMPORTANCE_HIGH
+//            )
+//            val intent = Intent(this, MainServiceReceiver::class.java).apply {
+//                action = "ACTION_EXIT"
+//            }
+//            val pendingIntent: PendingIntent =
+//                PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+//
+//            notificationManager.createNotificationChannel(notificationChannel)
+//            val notification = NotificationCompat.Builder(
+//                this, "channel1"
+//            ).setSmallIcon(R.mipmap.ic_launcher)
+//                .addAction(R.drawable.ic_end_call, "Exit", pendingIntent)
+//            startForeground(1, notification.build())
+        }
+
+        // Before starting the service as foreground check that the app has the
+        // appropriate runtime permissions. In this case, verify that the user has
+        // granted the CAMERA permission.
+        val cameraPermission =
+            PermissionChecker.checkSelfPermission(this, Manifest.permission.CAMERA)
+        if (cameraPermission != PermissionChecker.PERMISSION_GRANTED) {
+            // Without camera permissions the service cannot run in the foreground
+            // Consider informing user or updating your app UI if visible.
+            stopSelf()
+            return
+        }
+
+        try {
+            val notification = NotificationCompat.Builder(this, "CHANNEL_ID")
+                // Create the notification to display while the service is running
+                .build()
+            ServiceCompat.startForeground(
+                /* service = */ this,
+                /* id = */ 100, // Cannot be 0
+                /* notification = */ notification,
+                /* foregroundServiceType = */
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+                } else {
+                    0
+                },
             )
-
-            val intent = Intent(this, MainServiceReceiver::class.java).apply {
-                action = "ACTION_EXIT"
+        } catch (e: Exception) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                && e is ForegroundServiceStartNotAllowedException
+            ) {
+                // App not in a valid state to start foreground service
+                // (e.g. started from bg)
             }
-            val pendingIntent: PendingIntent =
-                PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
-
-            notificationManager.createNotificationChannel(notificationChannel)
-            val notification = NotificationCompat.Builder(
-                this, "channel1"
-            ).setSmallIcon(R.mipmap.ic_launcher)
-                .addAction(R.drawable.ic_end_call, "Exit", pendingIntent)
-
-            startForeground(1, notification.build())
+            e.printStackTrace()
+            // ...
         }
     }
-
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -212,9 +252,11 @@ class MainService : Service(), MainRepository.Listener {
                 DataModelType.StartAudioCall -> {
                     listener?.onCallReceived(data)
                 }
+
                 DataModelType.EndCall -> {
                     listener?.onCallEnded(data)
                 }
+
                 else -> Unit
             }
         }

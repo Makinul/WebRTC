@@ -27,7 +27,7 @@ class LoginActivity : BaseActivity() {
 
     private fun init() {
         views.apply {
-            usernameEt.setText("-2222223")
+            usernameEt.setText(EMULATOR_USER)
             passwordEt.setText("123456")
             btn.setOnClickListener {
                 gotoMainView(usernameEt.text.toString(), passwordEt.text.toString())
@@ -48,5 +48,10 @@ class LoginActivity : BaseActivity() {
                 finish()
             }
         }
+    }
+
+    companion object {
+        const val DEVICE_USER = "emulator"
+        const val EMULATOR_USER = "device"
     }
 }
